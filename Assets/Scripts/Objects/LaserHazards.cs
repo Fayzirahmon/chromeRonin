@@ -7,8 +7,8 @@ public class LaserHazard : MonoBehaviour
     public int damageAmount = 999;
     public float laserLength = 10f;
     public float laserWidth = 0.3f;
-    public LayerMask hitLayers; // What stops the laser (Walls, Ground, Player, Enemy)
-    public LayerMask obstacleLayer; // For Movement Turnaround
+    public LayerMask hitLayers;
+    public LayerMask obstacleLayer;
 
     [Header("Movement Settings")]
     public bool isMoving = false;
@@ -79,15 +79,12 @@ public class LaserHazard : MonoBehaviour
 
     void UpdateLaser()
     {
-        // 0. Sync Widths
         _lineRenderer.startWidth = laserWidth;
         _lineRenderer.endWidth = laserWidth;
 
-        // 1. Start Point
         Vector3 startPos = transform.position;
         _lineRenderer.SetPosition(0, startPos);
 
-        // 2. Raycast
         Vector2 dir = -transform.up; 
         RaycastHit2D hit = Physics2D.Raycast(startPos, dir, laserLength, hitLayers);
         
@@ -99,8 +96,6 @@ public class LaserHazard : MonoBehaviour
             endPos = hit.point;
             dist = hit.distance;
 
-            // --- DAMAGE LOGIC ---
-            // Check for ANY damageable component (Player, Enemy, etc.)
             IDamageable damageable = hit.collider.GetComponent<IDamageable>();
             if (damageable != null)
             {

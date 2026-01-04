@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class TimeManager : MonoBehaviour
 {
@@ -12,19 +13,31 @@ public class TimeManager : MonoBehaviour
     public float maxChronoEnergy = 100f;
     public float currentChronoEnergy;
     public float drainRate = 20f; 
-    public float refillAmountOnKill = 30f; 
-
-    [Header("Input")]
-    public KeyCode overclockKey = KeyCode.L;
-
+    public float refillAmountOnKill = 30f;
+    
+    [Header("Kill Refill Modifier")]
+    [Tooltip("Multiplier for refill amount on kill (0.5 = 50% of refillAmountOnKill)")]
+    [Range(0.1f, 2f)]
+    public float killRefillMultiplier = 1f;  // Adjust this to reduce refill amount per kill
+    
+    [Header("Gradual Refill Settings")]
+    [Tooltip("Speed at which energy refills after a kill (per second)")]
+    public float refillSpeed = 15f;  // Energy per second during gradual refill
+    
+    private float _pendingRefillAmount = 0f;  // Amount of energy waiting to be gradually added
     private bool _isOverclockActive = false;
+    private bool _isHitStopActive = false; 
     private float _fixedDeltaTime; 
 
     void Awake()
     {
         if (Instance == null) Instance = this;
+        else Destroy(gameObject); 
+        
         _fixedDeltaTime = Time.fixedDeltaTime;
         ResetEnergy();
+
+        GameKeys.LoadKeys(); 
     }
 
     void Update()
@@ -35,18 +48,41 @@ public class TimeManager : MonoBehaviour
         }
 
         HandleInput();
+        HandleGradualRefill();
         HandleTimeScale();
     }
 
     public void ResetEnergy()
     {
         currentChronoEnergy = maxChronoEnergy;
+        _pendingRefillAmount = 0f;
         _isOverclockActive = false;
+        _isHitStopActive = false;
+    }
+
+    void HandleGradualRefill()
+    {
+        // Gradually add pending refill energy
+        if (_pendingRefillAmount > 0 && currentChronoEnergy < maxChronoEnergy)
+        {
+            float refillThisFrame = refillSpeed * Time.unscaledDeltaTime;
+            refillThisFrame = Mathf.Min(refillThisFrame, _pendingRefillAmount);
+            
+            currentChronoEnergy += refillThisFrame;
+            _pendingRefillAmount -= refillThisFrame;
+            
+            // Clamp to max
+            if (currentChronoEnergy > maxChronoEnergy)
+            {
+                currentChronoEnergy = maxChronoEnergy;
+                _pendingRefillAmount = 0f;
+            }
+        }
     }
 
     void HandleInput()
     {
-        if (Input.GetKey(overclockKey))
+        if (Input.GetKey(GameKeys.Overclock))
         {
             if (currentChronoEnergy > 0)
             {
@@ -68,9 +104,11 @@ public class TimeManager : MonoBehaviour
 
     void HandleTimeScale()
     {
-        if (GameManager.Instance != null && GameManager.Instance.isGamePaused) return;
-
-        if (_isOverclockActive)
+        if (_isHitStopActive)
+        {
+            Time.timeScale = 0f;
+        }
+        else if (_isOverclockActive)
         {
             Time.timeScale = slowdownFactor;
         }
@@ -82,7 +120,31 @@ public class TimeManager : MonoBehaviour
         Time.fixedDeltaTime = _fixedDeltaTime * Time.timeScale;
     }
 
+    public void TriggerHitStop(float duration)
+    {
+        if (_isHitStopActive) return; 
+        StartCoroutine(HitStopRoutine(duration));
+    }
+
+    IEnumerator HitStopRoutine(float duration)
+    {
+        _isHitStopActive = true;
+        yield return new WaitForSecondsRealtime(duration);
+        _isHitStopActive = false;
+    }
+
     public void AddChronoEnergy(float amount)
+    {
+        // Apply kill refill multiplier to reduce the amount
+        float adjustedAmount = amount * killRefillMultiplier;
+        // Add to pending refill for gradual increase instead of instant
+        _pendingRefillAmount += adjustedAmount;
+    }
+    
+    /// <summary>
+    /// Adds energy instantly without gradual refill animation
+    /// </summary>
+    public void AddChronoEnergyInstant(float amount)
     {
         currentChronoEnergy += amount;
         if (currentChronoEnergy > maxChronoEnergy) currentChronoEnergy = maxChronoEnergy;

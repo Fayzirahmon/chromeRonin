@@ -9,7 +9,6 @@ public class RebindButton : MonoBehaviour
     public string actionName; 
     public TextMeshProUGUI keyDisplay; 
 
-    // Global flag
     public static bool isRebinding = false; 
 
     private Button myButton;

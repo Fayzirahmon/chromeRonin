@@ -21,41 +21,61 @@ public class GameManager : MonoBehaviour
 
     [Header("Settings")]
     public float deathRestartDelay = 2f;
+    [Tooltip("Name of the Scene for the Main Menu")]
+    public string mainMenuSceneName = "MainMenu";
+
+    // Internal flag to track if we should heal the player or keep damage
+    private bool shouldPreserveStats = false; 
+    private bool isResumingFromSave = false;
 
     void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            SceneManager.sceneLoaded += OnSceneLoaded; 
-        }
-        else
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
         }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDestroy()
+    {
+        if (Instance == this)
+            SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     void Update()
     {
-        if (SceneManager.GetActiveScene().buildIndex == 0) return;
+        if (SceneManager.GetActiveScene().name == mainMenuSceneName)
+            return;
 
         if (Input.GetKeyDown(KeyCode.Escape))
-        {
             HandlePauseInput();
-        }
     }
+
     void HandlePauseInput()
     {
-        if (RebindButton.isRebinding) return;
-
         PauseManager pm = FindObjectOfType<PauseManager>();
         if (pm != null && pm.keySettingsPanel.activeSelf)
         {
             pm.CloseKeySettings();
             return;
         }
+
         TogglePause();
+    }
+
+    public void TogglePause()
+    {
+        isGamePaused = !isGamePaused;
+        Time.timeScale = isGamePaused ? 0f : 1f;
+
+        PauseManager pm = FindObjectOfType<PauseManager>();
+        if (pm != null)
+            pm.SetPauseState(isGamePaused);
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -64,46 +84,126 @@ public class GameManager : MonoBehaviour
         isGamePaused = false;
         Time.timeScale = 1f;
 
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        
-        if (player == null && playerPrefab != null)
+        if (scene.name == mainMenuSceneName)
+            return;
+
+        // --- STATS LOGIC ---
+        if (!shouldPreserveStats)
         {
-            player = Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+            // CASE A: We are resetting (Level Transition, Resume, New Game)
+            // 1. Reset Chrono Bar
+            if (TimeManager.Instance != null) TimeManager.Instance.ResetEnergy();
+            
+            // 2. Set HP flag to -1 (Means "Give me Max Health" in Spawn routine)
+            playerCurrentHealth = -1; 
+        }
+        else
+        {
+            // CASE B: Room Transition
+            // We do nothing. We keep the 'playerCurrentHealth' value we have in memory.
+            // We do not reset TimeManager.
         }
 
-        if (player != null)
+        SpawnAndRestorePlayer();
+
+        // Checkpointing
+        if (!isResumingFromSave)
         {
-            Health playerHealth = player.GetComponent<Health>();
-            if (playerHealth != null)
+            PlayerPrefs.SetString("SavedLevel", scene.name);
+            PlayerPrefs.SetInt("SavedSpawnID", spawnID);
+            // We always save the health we currently have (whether it was just maxed or preserved)
+            PlayerPrefs.SetInt("SavedHealth", playerCurrentHealth);
+            PlayerPrefs.Save();
+        }
+
+        isResumingFromSave = false;
+        shouldPreserveStats = false; // Always reset flag to "Fresh" for safety
+    }
+
+    void SpawnAndRestorePlayer()
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        if (player == null && playerPrefab != null)
+            player = Instantiate(playerPrefab);
+
+        if (player == null)
+            return;
+
+        Health health = player.GetComponent<Health>();
+        if (health != null)
+        {
+            // If flag is -1, it means we want a Fresh Start (Max HP)
+            if (playerCurrentHealth == -1) 
             {
-                if (playerCurrentHealth <= 0) playerCurrentHealth = playerHealth.maxHealth;
-                
-                playerHealth.SetHealth(playerCurrentHealth);
+                playerCurrentHealth = health.maxHealth;
             }
 
-            LevelEntrance[] entrances = FindObjectsOfType<LevelEntrance>();
-            foreach (LevelEntrance entrance in entrances)
+            health.SetHealth(playerCurrentHealth);
+        }
+
+        LevelEntrance[] entrances = FindObjectsOfType<LevelEntrance>();
+        foreach (LevelEntrance entrance in entrances)
+        {
+            if (entrance.entranceID == spawnID)
             {
-                if (entrance.entranceID == spawnID)
+                player.transform.position = entrance.transform.position;
+
+                CinemachineVirtualCamera vcam =
+                    FindObjectOfType<CinemachineVirtualCamera>();
+
+                if (vcam != null)
                 {
-                    player.transform.position = entrance.transform.position;
-                    
-                    CinemachineVirtualCamera vcam = FindObjectOfType<CinemachineVirtualCamera>();
-                    if (vcam != null)
-                    {
-                        vcam.Follow = player.transform;
-                        vcam.OnTargetObjectWarped(player.transform, player.transform.position - vcam.transform.position); 
-                    }
-                    break;
+                    vcam.Follow = player.transform;
+                    vcam.OnTargetObjectWarped(
+                        player.transform,
+                        player.transform.position - vcam.transform.position
+                    );
                 }
+                break;
             }
         }
     }
 
-    public void LoadLevel(string sceneName, int targetID)
+    // --- UPDATED LOAD LEVEL ---
+    // Added 'resetStats' parameter. Defaults to TRUE (Fresh Start)
+    public void LoadLevel(string sceneName, int targetID, bool resetStats = true)
     {
         spawnID = targetID;
+        // If we are resetting stats (Level Change), we do NOT preserve.
+        // If we are NOT resetting stats (Room Change), we DO preserve.
+        shouldPreserveStats = !resetStats; 
+        
         SceneManager.LoadScene(sceneName);
+    }
+
+    public void ContinueGame()
+    {
+        if (!PlayerPrefs.HasKey("SavedLevel"))
+        {
+            NewGame();
+            return;
+        }
+
+        Time.timeScale = 1f;
+        isResumingFromSave = true;
+        shouldPreserveStats = false; // RESUME = FRESH START (Max HP)
+
+        spawnID = PlayerPrefs.GetInt("SavedSpawnID");
+        // Note: We ignore "SavedHealth" from PlayerPrefs to ensure fair restart
+        
+        SceneManager.LoadScene(PlayerPrefs.GetString("SavedLevel"));
+    }
+
+    public void NewGame()
+    {
+        PlayerPrefs.DeleteAll();
+
+        coins = 0;
+        spawnID = 0;
+        shouldPreserveStats = false; // FRESH START
+
+        SceneManager.LoadScene(1);
     }
 
     public void UpdatePlayerHealth(int newHealth)
@@ -119,58 +219,40 @@ public class GameManager : MonoBehaviour
     public void TriggerGameOver()
     {
         if (isGameOver) return;
+
         isGameOver = true;
 
         GameOverManager deathScreen = FindObjectOfType<GameOverManager>();
-        
         if (deathScreen != null)
-        {
-            deathScreen.PlayDeathSequence(OnDeathSequenceFinished); 
-        }
+            deathScreen.PlayDeathSequence(OnDeathSequenceFinished);
         else
-        {
-            Debug.LogWarning("GameOverManager not found! Using fallback restart.");
             StartCoroutine(FallbackRestartRoutine());
-        }
     }
 
     void OnDeathSequenceFinished()
     {
-        isGameOver = false; 
+        isGameOver = false;
         Time.timeScale = 1f;
-
         coins = 0;
-        
-        if (TimeManager.Instance != null) 
-        {
-            TimeManager.Instance.ResetEnergy();
-        }
-
-        if (playerPrefab != null)
-        {
-            Health h = playerPrefab.GetComponent<Health>();
-            if (h != null) playerCurrentHealth = h.maxHealth;
-            else playerCurrentHealth = 5; 
-        }
+        shouldPreserveStats = false; // Death = Full Restart = Max HP
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    public IEnumerator FallbackRestartRoutine()
+    IEnumerator FallbackRestartRoutine()
     {
         yield return new WaitForSeconds(deathRestartDelay);
         OnDeathSequenceFinished();
     }
 
-    public void TogglePause()
+    public void CompleteLevel(int levelIndex)
     {
-        isGamePaused = !isGamePaused;
-        Time.timeScale = isGamePaused ? 0f : 1f;
+        int currentLevelReached = PlayerPrefs.GetInt("levelReached", 1);
 
-        PauseManager pm = FindObjectOfType<PauseManager>();
-        if (pm != null)
+        if (levelIndex + 1 > currentLevelReached)
         {
-            pm.SetPauseState(isGamePaused);
+            PlayerPrefs.SetInt("levelReached", levelIndex + 1);
+            PlayerPrefs.Save();
         }
     }
 }

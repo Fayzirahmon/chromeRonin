@@ -14,8 +14,8 @@ public class CameraFollow : MonoBehaviour
 
     [Header("Level Boundaries")]
     public bool enableBounds = true;
-    public Vector2 minBounds = new Vector2(-10, -10); // Bottom-Left Limit
-    public Vector2 maxBounds = new Vector2(100, 20);  // Top-Right Limit
+    public Vector2 minBounds = new Vector2(-10, -10);
+    public Vector2 maxBounds = new Vector2(100, 20);
 
     private Vector3 targetPoint;
     private float lookOffset;

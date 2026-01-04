@@ -11,15 +11,12 @@ public class Interactable : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Only run this logic if autoInteract is TRUE
         if (autoInteract && other.CompareTag("Player"))
         {
             OnInteract();
         }
     }
 
-    // This is called by PlayerInteraction.cs when pressing E
-    // OR called by OnTriggerEnter2D above if autoInteract is true
     public void OnInteract()
     {
         switch (type)
@@ -34,11 +31,9 @@ public class Interactable : MonoBehaviour
                 break;
             case InteractionType.Switch:
                 Debug.Log("Switch activated!");
-                // Add switch logic (e.g., OpenDoor())
                 break;
             case InteractionType.Talk:
                 Debug.Log("Hello Traveler!");
-                // Add dialogue logic
                 break;
         }
     }

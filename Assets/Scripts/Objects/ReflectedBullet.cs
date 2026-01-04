@@ -22,7 +22,6 @@ public class ReflectedBullet : MonoBehaviour
     {
         Destroy(gameObject, 3f); 
 
-        // Ignore Player Collision
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
@@ -35,14 +34,12 @@ public class ReflectedBullet : MonoBehaviour
         }
     }
 
-    // Called by ParryShield.cs
     public void Launch(Vector2 direction)
     {
         if (rb == null) rb = GetComponent<Rigidbody2D>();
 
         rb.velocity = direction.normalized * speed;
         
-        // Rotate visual to face direction
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
@@ -51,14 +48,12 @@ public class ReflectedBullet : MonoBehaviour
     {
         if (hitInfo.CompareTag("Player")) return;
 
-        // Wall/Ground Check
         if ((solidLayers.value & (1 << hitInfo.gameObject.layer)) > 0)
         {
             Destroy(gameObject);
             return;
         }
 
-        // Damage Check (Enemies, Switches, Breakables)
         IDamageable target = hitInfo.GetComponent<IDamageable>();
         if (target != null)
         {

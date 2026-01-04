@@ -10,9 +10,18 @@ public class PauseManager : MonoBehaviour
 
     public void SetPauseState(bool isPaused)
     {
-        if (pauseMenuPanel) pauseMenuPanel.SetActive(isPaused);
-        
-        // Hide HUD while paused for a cleaner look
+        if (pauseMenuPanel) 
+        {
+            pauseMenuPanel.SetActive(isPaused);
+            
+            CanvasGroup group = pauseMenuPanel.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.alpha = 1f;            
+                group.blocksRaycasts = true; 
+                group.interactable = true;   
+            }
+        }
         if (hudPanel) hudPanel.SetActive(!isPaused); 
     }
 
@@ -30,14 +39,14 @@ public class PauseManager : MonoBehaviour
 
     public void OpenKeySettings()
     {
-        pauseMenuPanel.SetActive(false); // Hide Main Buttons
-        keySettingsPanel.SetActive(true);  // Show Rebind Icons
+        pauseMenuPanel.SetActive(false); 
+        keySettingsPanel.SetActive(true);  
     }
 
     public void CloseKeySettings()
     {
-        keySettingsPanel.SetActive(false); // Hide Rebind Icons
-        pauseMenuPanel.SetActive(true);  // Show Main Buttons
+        keySettingsPanel.SetActive(false); 
+        pauseMenuPanel.SetActive(true);  
     }
     
     public void QuitGame()

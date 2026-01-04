@@ -10,8 +10,6 @@ public class Switch : MonoBehaviour, IDamageable
     [Header("Visuals")]
     public Sprite activeSprite;
     public Sprite inactiveSprite;
-    public Color activeColor = Color.green;
-    public Color inactiveColor = Color.red;
 
     [Header("Events")]
     public UnityEvent onActivate;
@@ -27,7 +25,6 @@ public class Switch : MonoBehaviour, IDamageable
 
     public void TakeDamage(int damage)
     {
-        // Toggle the switch
         if (isOneTimeUse && isActivated) return;
 
         Toggle();
@@ -56,12 +53,10 @@ public class Switch : MonoBehaviour, IDamageable
         if (isActivated)
         {
             if (activeSprite) _sr.sprite = activeSprite;
-            _sr.color = activeColor;
         }
         else
         {
             if (inactiveSprite) _sr.sprite = inactiveSprite;
-            _sr.color = inactiveColor;
         }
     }
 }
