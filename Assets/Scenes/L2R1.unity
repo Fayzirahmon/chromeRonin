@@ -656,6 +656,14 @@ PrefabInstance:
       value: Switch
       objectReference: {fileID: 0}
     - target: {fileID: 3503639874146329099, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
+      propertyPath: activeSprite
+      value: 
+      objectReference: {fileID: -1527895630, guid: caa32354953264fde86603cf1695b23b, type: 3}
+    - target: {fileID: 3503639874146329099, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
+      propertyPath: inactiveSprite
+      value: 
+      objectReference: {fileID: 124279971, guid: caa32354953264fde86603cf1695b23b, type: 3}
+    - target: {fileID: 3503639874146329099, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
       propertyPath: onActivate.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1858965162}
@@ -663,6 +671,18 @@ PrefabInstance:
       propertyPath: onDeactivate.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1858965162}
+    - target: {fileID: 3781791850154389427, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.12
+      objectReference: {fileID: 0}
+    - target: {fileID: 3781791850154389427, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.12
+      objectReference: {fileID: 0}
+    - target: {fileID: 3781791850154389427, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.12
+      objectReference: {fileID: 0}
     - target: {fileID: 3781791850154389427, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.17
@@ -703,6 +723,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3781791850154389427, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4211483626700252092, guid: 03187efb494ebd14dbe747f9a26e4c74, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 124279971, guid: caa32354953264fde86603cf1695b23b, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2866,7 +2894,7 @@ TilemapRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 0.0015873313, y: 0.004771173, z: 0}
+  m_ChunkCullingBounds: {x: 0.0015873313, y: 0.0047619343, z: 0}
   m_MaxChunkCount: 16
   m_MaxFrameAge: 16
   m_SortOrder: 0
@@ -8547,7 +8575,7 @@ TilemapRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 5
   m_ChunkSize: {x: 32, y: 32, z: 32}
-  m_ChunkCullingBounds: {x: 0.0015873313, y: 0.004771173, z: 0}
+  m_ChunkCullingBounds: {x: 0.0015873313, y: 0.0047619343, z: 0}
   m_MaxChunkCount: 16
   m_MaxFrameAge: 16
   m_SortOrder: 0
